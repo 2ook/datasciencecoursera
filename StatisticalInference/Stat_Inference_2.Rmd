@@ -1,0 +1,78 @@
+---
+title: "ToothGrowth Data Evaluation"
+author: "Tony Bredehoeft"
+date: "September 21, 2014"
+output: html_document
+---
+
+Now we'll move into the second part of the assignment where I'll take a look at the ToothGrowth data set available in R. This data set tracks the tooth length of guinea pigs when given doses of Vitamin C in two delivery methods (orange juice or ascorbic acid). 
+
+First let's glance at the data set and the variables provided.
+
+```{r}
+str(ToothGrowth)
+head(ToothGrowth)
+```
+
+Here, we can see that there are 3 variables in the data, where "len" is the the tooth length, "supp" is the delivery method and "dose" is the dose amount in milligrams. 
+
+Now I'm going to plot the density of tooth length by delivery method.
+
+```{r}
+library(lattice)
+with(ToothGrowth,densityplot(~ len|supp, 
+            main="Density Plot by Supplement Type",
+            xlab="Tooth Length", 
+            layout=c(1,2)))
+```
+
+Here we can see that tooth length for guinea pigs delivered asorbic acid has a much wider distribution than those that were delivered orange juice. Also, the distribution for orange is almost bimodal, peaking at both 10 and 25. 
+
+Overall, it looks like the tooth length values are slightly higher for the orange juice distribution as well.
+
+Now I'm going to add dose amount to the plot to see how this affects tooth length values.
+
+```{r}
+with(ToothGrowth,xyplot(len ~ dose|supp, 
+            main="Tooth Length by Dose and Supplement Type",
+            xlab="Dose", 
+            ylab="Tooth Length",
+            layout=c(2,1)))
+```
+
+For both the asorbic acid and orange juice delivery methods, we can see that dose amount is positively correlated with tooth growth. Also, we can see that the asorbic acid dose of 2 milligrams looks to have a much higher variance in guinea pig tooth size.
+
+Now let's look at a brief summary of the data.
+
+```{r}
+library(psych)
+describeBy(ToothGrowth,ToothGrowth$supp)
+```
+
+Here we can see that the mean for the orange juice delivery method is slightly higher than that for the asorbic acid delivery method. Also, as we saw in our density plot above, the orange juice distribution has a noticeable left skew.
+
+Now we'll begin to compare tooth length by dose and supplement using the moethods taught in class. In the description of the data, it suggests that 10 guinea pigs were used in the experiment, though it doesn't specify whether it is the same guinea pigs used across the different dose and supplement values. For this reason I'm using two sample t-tests and not paired sample t-tests.
+
+I'll start by evaluating if there is a significant difference between values for the 2 delivery mechanisms (asorbic acid and orange juice) with a two sample t-test.
+
+```{r}
+with(ToothGrowth, t.test(len ~ supp, paired = FALSE))
+```
+
+We can see that the t statistic is 1.91, which is less than 1.96 which represents the right boundary of the 95% confidence interval, meaning the difference between tooth length values of the asorbic acid and orange juice groups is not significant at the 95% confidence level. This is also reflected in the p-value, which is greater than 0.05, and in the 95% confidence interval for the difference which contains 0.
+
+Next I will compare the dose values (0.5,1 and 2 milligrams) with the same two sample t-tests. Note that we are focused on t-tests at the moment, so I can only compare 2 levels of values. This means I will have to create subsets of the data to compare 2 dose levels at a time.
+
+```{r}
+TG.sub.1 <- subset(ToothGrowth, dose %in% c(0.5, 1))
+TG.sub.2 <- subset(ToothGrowth, dose %in% c(0.5, 2))
+TG.sub.3 <- subset(ToothGrowth, dose %in% c(1, 2))
+
+with(TG.sub.1, t.test(len ~ dose, paired = FALSE))
+with(TG.sub.2, t.test(len ~ dose, paired = FALSE))
+with(TG.sub.3, t.test(len ~ dose, paired = FALSE))
+```
+
+Above we can see that each of the comparisons between dose levels were highly significant, with p-values below 0.05 and confidence intervals that do not contain 0. Overall, both dose level and delivery method were statistically significant in corresponding tooth length values for guinea pigs.
+
+A next step would be to combine multiple factors in our comparison, as well as to include a baseline/placebo value for a group of guinea pigs. Thanks for reading, please feel free to comment.

@@ -1,0 +1,62 @@
+---
+title: "Transmission Effects on Vehicle Fuel Economy"
+author: "Tony Bredehoeft"
+---
+
+##Executive Summary
+
+The goal of this analysis was to assess whether the transmission type of a vehicle (manual or automatic) affects the fuel economy of a vehicle, as indicated by the fuel miles per gallon. The analysis determined that ***transmission does have a significant effect on fuel miles per gallon, with manual transmissions generally having better fuel ecoconomy than automatic transmissions***. Based on the analysis, ***having a manual transmission increased expected fuel miles per gallon by 2.94 compared to automatic transmissions***, with other confounding variables being held constant.
+
+##Exploratory Analysis
+
+In evaluating whether or not having a manual or automatic transmission affects fuel miles per gallon, I'll start by getting a sense of the data provided. Below we can see that the mtcars data set contains records from 32 vehicles, each with 11 variables measuring various attributes for each vehicle, including fuel miles per gallon, number of cylinders, and whether the vehicle has a manual or automatic transmission
+
+```{r, echo=FALSE}
+row.names(mtcars)
+```
+
+Next I'll construct a few basic plots to get a sense of the potential effect of transmission type. Below you can see that vehicles with manual transmissions tend to have higher fuel miles per gallon (higher mean). You can also see that the fuel miles per gallon for vehicles with automatic transmissions is more highly concentrated, whereas manual transmissions have a wider distribution of fuel miles per gallon.
+
+```{r, echo=FALSE}
+library(lattice)
+trans.label <- ifelse(mtcars$am == 1,'manual','automatic')
+densityplot(~ mtcars$mpg|trans.label, layout=c(1,2),
+            main="Density of Miles Per Gallon by Transmission Type",
+            xlab="Miles Per Gallon")
+```
+
+###Regression Modeling
+
+Now we will explore the relationship between transmission type and miles per gallon further by modeling with a multi-variate linear regression. Although I am mainly focused on the relationship between the two variables listed above, I need to seek to include other confounders in the model so I have a stronger inference. First, I'll calculate the correlation between the variables in the data set to get a sense of what variables I may want to include in a regression model.
+
+```{r, echo=FALSE, results='asis'}
+library(knitr)
+kable(cor(mtcars[,1],mtcars[,2:11]))
+```
+
+Here we can see that there are a number of variables that are highly correlated with miles per gallon, with many variables being more strongly correlated than transmission type. I'll start by fitting a model with only transmission type. Note that I've fit the variable as a factor, though it won't matter given it is only a binary variable.
+
+```{r, echo=FALSE}
+mtcars$cyl <- as.factor(mtcars$cyl)
+mtcars$am <- as.factor(mtcars$am)
+fit.1 <- lm(mpg ~ factor(am), data = mtcars)
+coef(fit.1)
+```
+
+Above we can see that the relationship is significant in the model, with a manual transmission being associated with a 7.24 expected increase in fuel miles per gallon over automatic transmissions. Now I'll use a forward stepwise selection method to determine if there are any further confounders to consider in the model.
+
+```{r, echo=FALSE}
+library(MASS)
+step <- stepAIC(lm(mpg ~ ., data = mtcars), trace=FALSE, direction="backward")
+summary(step)
+```
+
+Above we can see the final model fit with 3 variables, including transmission type, quarter mile time and weight (in thousands of pounds). We can also see the significant improvement of the model R-squared, from 0.36 to 0.85, with the inclusion of the two new variables. We can see that a manual transmission has a positive affect on expected fuel miles per gallon, though the coefficient value is reduced from 7.24 to 2.936. In our final model, having a manual transmission is associated with a 2.936 increase in fuel miles per gallon against automatic transmissions, with quarter mile time and car weight being held constant. Now we'll take some residual diagnostic plots to assess the fit of the model.
+
+```{r, echo=FALSE}
+par(mar = rep(2.5, 4))
+par(mfrow = c(2,2))
+plot(step)
+```
+
+In the plots above we can see that the residuals are normally distributed, though our quantile plot shows that the model is less reliable with high miles per gallon vehicles. This suggests we may be missing a variable or interaction relationship in the model.
